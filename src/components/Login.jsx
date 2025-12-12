@@ -1,17 +1,26 @@
 import React, { useState } from 'react';
+import { authAPI } from '../api/apiClient';
 
 const Login = ({ onLogin }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // FR2: Validate user credentials (Simulated)
-        if (username === 'admin' && password === 'admin') {
+        setError('');
+        setIsLoading(true);
+
+        try {
+            // FR2: Validate user credentials via backend
+            await authAPI.login(username, password);
             onLogin();
-        } else {
+        } catch (err) {
             // FR4: Invalid login attempt protection
-            alert('Invalid Credentials. Access Denied. (Hint: use admin/admin)'); 
+            setError(err.message || 'Invalid credentials. Access denied.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -49,11 +58,13 @@ const Login = ({ onLogin }) => {
                     </div>
                     <button
                         type="submit"
-                        className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150"
+                        disabled={isLoading}
+                        className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 disabled:bg-gray-400 disabled:cursor-not-allowed"
                     >
-                        Log In
+                        {isLoading ? 'Logging in...' : 'Log In'}
                     </button>
                 </form>
+                {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
                 <p className="mt-4 text-center text-xs text-gray-500">Hint: Use 'admin' / 'admin'</p>
             </div>
         </div>

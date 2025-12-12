@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
-import { initialCategories, initialItems } from './data/mockData';
+import { categoriesAPI, itemsAPI } from './api/apiClient';
 import Navigation from './components/Navigation';
 import ItemManager from './components/ItemManager';
 import CategoryManager from './components/CategoryManager';
@@ -18,9 +18,35 @@ const reorder = (list, startIndex, endIndex) => {
 function App() {
     // --- State Management ---
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    // Use deep copy to prevent mutation issues with complex DND logic
-    const [items, setItems] = useState(initialItems); 
-    const [categories, setCategories] = useState(initialCategories);
+    const [items, setItems] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    // Fetch categories and items from backend on mount and after authentication
+    useEffect(() => {
+        if (isAuthenticated) {
+            fetchData();
+        }
+    }, [isAuthenticated]);
+
+    const fetchData = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const [categoriesData, itemsData] = await Promise.all([
+                categoriesAPI.getAll(),
+                itemsAPI.getAll(),
+            ]);
+            setCategories(categoriesData);
+            setItems(itemsData);
+        } catch (err) {
+            setError(err.message);
+            console.error('Error fetching data:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     // FR4: Session timeout simulation (Basic)
     useEffect(() => {
@@ -38,33 +64,66 @@ function App() {
     const handleLogout = () => setIsAuthenticated(false);
 
     // --- Item Management Handlers (FR6, FR8, FR10) ---
-    const handleAddItem = (newItemData) => {
-        const newItem = { ...newItemData, id: `item-${Date.now()}` }; 
-        setItems([...items, newItem]);
+    const handleAddItem = async (newItemData) => {
+        try {
+            const addedItem = await itemsAPI.create(newItemData);
+            setItems([...items, addedItem]);
+        } catch (err) {
+            setError(err.message);
+            console.error('Error adding item:', err);
+            alert('Failed to add item: ' + err.message);
+        }
     };
 
-    const handleUpdateItem = (id, updatedData) => {
-        setItems(items.map(item => item.id === id ? { ...item, ...updatedData } : item));
+    const handleUpdateItem = async (id, updatedData) => {
+        try {
+            const updatedItem = await itemsAPI.update(id, updatedData);
+            setItems(items.map(item => item.id === id ? updatedItem : item));
+        } catch (err) {
+            setError(err.message);
+            console.error('Error updating item:', err);
+            alert('Failed to update item: ' + err.message);
+        }
     };
 
-    const handleDeleteItem = (id) => {
-        setItems(items.filter(item => item.id !== id));
+    const handleDeleteItem = async (id) => {
+        try {
+            await itemsAPI.delete(id);
+            setItems(items.filter(item => item.id !== id));
+        } catch (err) {
+            setError(err.message);
+            console.error('Error deleting item:', err);
+            alert('Failed to delete item: ' + err.message);
+        }
     };
 
     // --- Category Management Handlers (FR14) ---
-    const handleAddCategory = (name) => {
-        const newCat = { id: `cat-${Date.now()}`, name };
-        setCategories([...categories, newCat]);
+    const handleAddCategory = async (name) => {
+        try {
+            const newCat = await categoriesAPI.create(name);
+            setCategories([...categories, newCat]);
+        } catch (err) {
+            setError(err.message);
+            console.error('Error adding category:', err);
+            alert('Failed to add category: ' + err.message);
+        }
     };
 
-    const handleDeleteCategory = (id) => {
-        setCategories(categories.filter(cat => cat.id !== id));
-        // FR13: Automatically update category associations 
-        setItems(items.map(item => item.categoryId === id ? { ...item, categoryId: null } : item));
+    const handleDeleteCategory = async (id) => {
+        try {
+            await categoriesAPI.delete(id);
+            setCategories(categories.filter(cat => cat.id !== id));
+            // FR13: Automatically update category associations
+            setItems(items.map(item => item.categoryId === id ? { ...item, categoryId: null } : item));
+        } catch (err) {
+            setError(err.message);
+            console.error('Error deleting category:', err);
+            alert('Failed to delete category: ' + err.message);
+        }
     };
 
     // --- Drag-and-Drop Logic (FR12 & FR13) ---
-    const onDragEnd = (result) => {
+    const onDragEnd = async (result) => {
         const { source, destination, type, draggableId } = result;
 
         if (!destination) return;
@@ -77,7 +136,7 @@ function App() {
         }
 
         // 2. Moving Items between/within Categories (Type: item)
-        // FR13: Automatically update category associations 
+        // FR13: Automatically update category associations
         
         setItems(prevItems => {
             let updatedItems = Array.from(prevItems);
@@ -87,13 +146,17 @@ function App() {
             if (!draggedItem) return prevItems;
 
             // Update the categoryId (handles moving across categories - FR13)
-            if (draggedItem.categoryId !== destination.droppableId) {
-                draggedItem.categoryId = destination.droppableId;
+            const newCategoryId = destination.droppableId;
+            if (draggedItem.categoryId !== newCategoryId) {
+                draggedItem.categoryId = newCategoryId;
+                
+                // Update in backend
+                itemsAPI.update(draggableId, { ...draggedItem })
+                    .catch(err => {
+                        console.error('Error updating item category:', err);
+                        alert('Failed to update item category');
+                    });
             }
-            
-            // Note: For a front-end simulation, updating the categoryId is the main goal. 
-            // Positional reordering within the items array is complex without a robust 
-            // position field in the item structure, so we prioritize the category update.
             
             return updatedItems;
         });
@@ -102,6 +165,34 @@ function App() {
 
     if (!isAuthenticated) {
         return <Login onLogin={handleLogin} />;
+    }
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-gray-50">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading data...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-gray-50">
+                <div className="text-center p-6 bg-red-50 rounded-lg">
+                    <p className="text-red-600 font-medium">Error loading data</p>
+                    <p className="text-red-500 text-sm mt-2">{error}</p>
+                    <button 
+                        onClick={fetchData}
+                        className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
     }
 
     return (

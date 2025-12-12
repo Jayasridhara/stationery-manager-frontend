@@ -28,7 +28,8 @@ const ItemManager = ({ items, categories, onAddItem, onUpdateItem, onDeleteItem 
             return;
         }
 
-        if (currentItem) {
+        // Check if we're editing an existing item (has an ID) or creating a new one
+        if (currentItem && currentItem.id) {
             onUpdateItem(currentItem.id, newItem); // FR8, FR10
         } else {
             onAddItem(newItem); // FR6
