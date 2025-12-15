@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-const Navigation = ({ onLogout }) => {
+const Navigation = ({ onLogout, role }) => {
     const location = useLocation();
 
     // Helper function to apply active class (FRD is satisfied by providing navigation)
@@ -19,12 +19,20 @@ const Navigation = ({ onLogout }) => {
                         <span className="text-xl font-semibold text-white mr-8">Stationery Management System</span>
                         <div className="hidden sm:ml-6 sm:block">
                             <div className="flex space-x-4">
-                                <Link to="/items" className={getLinkClass('/items')}>
-                                    Item Management
-                                </Link>
-                                <Link to="/categories" className={getLinkClass('/categories')}>
-                                    Category Management
-                                </Link>
+                                {role === 'admin' ? (
+                                    <>
+                                        <Link to="/items" className={getLinkClass('/items')}>
+                                            Item Management
+                                        </Link>
+                                        <Link to="/categories" className={getLinkClass('/categories')}>
+                                            Category Management
+                                        </Link>
+                                    </>
+                                ) : (
+                                    <Link to="/browse" className={getLinkClass('/browse')}>
+                                        Browse Items
+                                    </Link>
+                                )}
                             </div>
                         </div>
                     </div>

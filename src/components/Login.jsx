@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { authAPI } from '../api/apiClient';
 
 const Login = ({ onLogin }) => {
@@ -6,6 +7,7 @@ const Login = ({ onLogin }) => {
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -14,8 +16,12 @@ const Login = ({ onLogin }) => {
 
         try {
             // FR2: Validate user credentials via backend
-            await authAPI.login(username, password);
-            onLogin();
+            const res = await authAPI.login(username, password);
+            const userRole = res?.user?.role || 'buyer';
+            onLogin(userRole);
+            // Redirect based on role
+            if (userRole === 'admin') navigate('/items');
+            else navigate('/browse');
         } catch (err) {
             // FR4: Invalid login attempt protection
             setError(err.message || 'Invalid credentials. Access denied.');
@@ -65,6 +71,9 @@ const Login = ({ onLogin }) => {
                     </button>
                 </form>
                 {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
+                <p className="mt-4 text-center text-sm">
+                    <Link to="/register" className="text-indigo-600 hover:underline">Create an account</Link>
+                </p>
               
             </div>
         </div>

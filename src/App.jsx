@@ -6,6 +6,8 @@ import Navigation from './components/Navigation';
 import ItemManager from './components/ItemManager';
 import CategoryManager from './components/CategoryManager';
 import Login from './components/Login';
+import Register from './components/Register';
+import BuyerItems from './components/BuyerItems';
 
 // Helper function to reorder arrays (used for categories)
 const reorder = (list, startIndex, endIndex) => {
@@ -28,6 +30,9 @@ function App() {
     const [categories, setCategories] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [role, setRole] = useState(() => {
+        try { return localStorage.getItem('userRole') || null; } catch (e) { return null; }
+    });
 
     // Fetch categories and items from backend on mount and after authentication
     useEffect(() => {
@@ -67,14 +72,16 @@ function App() {
     }, [isAuthenticated]);
 
     // --- User Authentication (FR1, FR2, FR3) ---
-    const handleLogin = () => {
+    const handleLogin = (userRole) => {
         setIsAuthenticated(true);
-        try { localStorage.setItem('isAuthenticated', 'true'); } catch (e) {}
+        setRole(userRole || null);
+        try { localStorage.setItem('isAuthenticated', 'true'); localStorage.setItem('userRole', userRole || 'buyer'); } catch (e) {}
     };
 
     const handleLogout = () => {
         setIsAuthenticated(false);
-        try { localStorage.removeItem('isAuthenticated'); } catch (e) {}
+        setRole(null);
+        try { localStorage.removeItem('isAuthenticated'); localStorage.removeItem('userRole'); } catch (e) {}
     };
 
     // --- Item Management Handlers (FR6, FR8, FR10) ---
@@ -177,9 +184,60 @@ function App() {
     };
     // ------------------------------------------
 
-    if (!isAuthenticated) {
-        return <Login onLogin={handleLogin} />;
-    }
+    return (
+        <Router>
+            <div className="min-h-screen bg-gray-50">
+                {isAuthenticated && <Navigation onLogout={handleLogout} role={role} />}
+                <main className="py-6">
+                    <Routes>
+                        {!isAuthenticated && (
+                            <>
+                                <Route path="/login" element={<Login onLogin={handleLogin} />} />
+                                <Route path="/register" element={<Register onRegister={handleLogin} />} />
+                                <Route path="*" element={<Navigate to="/login" replace />} />
+                            </>
+                        )}
+
+                        {isAuthenticated && (
+                            <>
+                                <Route path="/" element={<Navigate to="/items" replace />} />
+                                <Route 
+                                    path="/items" 
+                                    element={<ItemManager 
+                                        items={items} 
+                                        categories={categories}
+                                        onAddItem={handleAddItem}
+                                        onUpdateItem={handleUpdateItem}
+                                        onDeleteItem={handleDeleteItem}
+                                    />} 
+                                />
+                                
+                                <Route 
+                                    path="/categories" 
+                                    element={<CategoryManager 
+                                        categories={categories}
+                                        items={items} 
+                                        onAddCategory={handleAddCategory}
+                                        onDeleteCategory={handleDeleteCategory}
+                                        onDragEnd={onDragEnd} // DND handler
+                                    />} 
+                                />
+
+                                <Route path="/browse" element={<BuyerItems items={items} categories={categories} />} />
+
+                                <Route path="*" element={
+                                    <div className="text-center p-10">
+                                        <h1 className="text-4xl font-bold text-gray-800">404 - Not Found</h1>
+                                        <p className="text-gray-500 mt-2">The page you are looking for does not exist.</p>
+                                    </div>
+                                } />
+                            </>
+                        )}
+                    </Routes>
+                </main>
+            </div>
+        </Router>
+    );
 
     if (isLoading) {
         return (

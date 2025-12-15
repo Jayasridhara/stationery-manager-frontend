@@ -28,6 +28,10 @@ export const authAPI = {
         });
         return handleResponse(response);
     },
+    adminExists: async () => {
+        const response = await fetch(`${BASE_URL}/admin-exists`);
+        return handleResponse(response);
+    },
 };
 
 // Categories API
