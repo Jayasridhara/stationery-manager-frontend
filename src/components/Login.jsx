@@ -27,7 +27,7 @@ const Login = ({ onLogin }) => {
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
             <div className="w-full max-w-sm p-8 bg-white rounded-lg shadow-xl">
-                <h2 className="text-3xl font-bold text-center mb-6 text-indigo-600">User Authentication</h2>
+                <h2 className="text-3xl font-bold text-center mb-6 text-indigo-600">User Login</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="username">
@@ -65,7 +65,7 @@ const Login = ({ onLogin }) => {
                     </button>
                 </form>
                 {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
-                <p className="mt-4 text-center text-xs text-gray-500">Hint: Use 'admin' / 'admin'</p>
+              
             </div>
         </div>
     );

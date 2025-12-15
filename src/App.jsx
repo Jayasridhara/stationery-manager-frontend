@@ -17,7 +17,13 @@ const reorder = (list, startIndex, endIndex) => {
 
 function App() {
     // --- State Management ---
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(() => {
+        try {
+            return localStorage.getItem('isAuthenticated') === 'true';
+        } catch (e) {
+            return false;
+        }
+    });
     const [items, setItems] = useState([]);
     const [categories, setCategories] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -53,15 +59,23 @@ function App() {
         let timeout;
         if (isAuthenticated) {
             timeout = setTimeout(() => {
-                // Logic for session timeout
-            }, 15 * 60 * 1000); 
+                handleLogout();
+                alert('Session timed out. Please login again.');
+            }, 15 * 60 * 1000);
         }
         return () => clearTimeout(timeout);
     }, [isAuthenticated]);
 
     // --- User Authentication (FR1, FR2, FR3) ---
-    const handleLogin = () => setIsAuthenticated(true);
-    const handleLogout = () => setIsAuthenticated(false);
+    const handleLogin = () => {
+        setIsAuthenticated(true);
+        try { localStorage.setItem('isAuthenticated', 'true'); } catch (e) {}
+    };
+
+    const handleLogout = () => {
+        setIsAuthenticated(false);
+        try { localStorage.removeItem('isAuthenticated'); } catch (e) {}
+    };
 
     // --- Item Management Handlers (FR6, FR8, FR10) ---
     const handleAddItem = async (newItemData) => {

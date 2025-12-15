@@ -20,6 +20,14 @@ export const authAPI = {
         });
         return handleResponse(response);
     },
+    register: async (username, password, role) => {
+        const response = await fetch(`${BASE_URL}/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password, role }),
+        });
+        return handleResponse(response);
+    },
 };
 
 // Categories API
