@@ -1,5 +1,5 @@
 // API Configuration
-const BASE_URL ='http://localhost:5000/api';
+const BASE_URL ='https://stationery-manager-backend-1.onrender.com/api';
 
 // Helper function to handle API responses robustly (handles HTML/error pages)
 const handleResponse = async (response) => {
