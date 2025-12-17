@@ -1,13 +1,27 @@
 // API Configuration
 const BASE_URL ='http://localhost:5000/api';
 
-// Helper function to handle API responses
+// Helper function to handle API responses robustly (handles HTML/error pages)
 const handleResponse = async (response) => {
+    const contentType = response.headers.get('content-type') || '';
+
     if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'API request failed');
+        if (contentType.includes('application/json')) {
+            const error = await response.json().catch(() => null);
+            throw new Error(error?.message || JSON.stringify(error) || `HTTP ${response.status}`);
+        }
+
+        // Non-JSON (likely HTML error page) — return stripped text for a clearer message
+        const text = await response.text().catch(() => '');
+        const stripped = text.replace(/<[^>]+>/g, '').trim();
+        throw new Error(stripped || `HTTP ${response.status}`);
     }
-    return response.json();
+
+    if (contentType.includes('application/json')) {
+        return response.json();
+    }
+
+    return response.text();
 };
 
 // Authentication API
@@ -29,6 +43,7 @@ export const authAPI = {
         return handleResponse(response);
     },
     adminExists: async () => {
+        
         const response = await fetch(`${BASE_URL}/admin-exists`);
         return handleResponse(response);
     },

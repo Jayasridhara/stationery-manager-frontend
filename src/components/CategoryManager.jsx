@@ -62,7 +62,11 @@ const CategoryManager = ({ categories, items, onAddCategory, onDeleteCategory, o
                                     {/* FR14: Delete categories */}
                                     <div className="mt-2 flex justify-end space-x-2">
                                         <button 
-                                            onClick={() => onDeleteCategory(category.id)} 
+                                          onClick={() => {
+                                                if (window.confirm("Are you sure you want to delete category?")) {
+                                                    onDeleteCategory(category.id);
+                                                }
+                                            }}
                                             className="py-1 px-3 text-sm text-red-600 border border-red-400 rounded hover:bg-red-50"
                                         >
                                             Delete Category

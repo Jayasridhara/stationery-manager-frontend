@@ -142,9 +142,15 @@ const ItemManager = ({ items, categories, onAddItem, onUpdateItem, onDeleteItem 
                                         Edit
                                     </button>
                                     {/* FR8: Delete existing item */}
-                                    <button onClick={() => onDeleteItem(item.id)} 
-                                        className="text-red-600 hover:text-red-900 transition duration-150">
-                                        Delete
+                                    <button
+                                    className="text-red-600 hover:text-red-900 transition duration-150"
+                                    onClick={() => {
+                                        if (window.confirm("Are you sure you want to delete?")) {
+                                        onDeleteItem(item.id);
+                                        }
+                                    }}
+                                    >
+                                    Delete
                                     </button>
                                 </td>
                             </tr>
